@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include geocongoai/docs *
+recursive-include docs *
+recursive-include tests *

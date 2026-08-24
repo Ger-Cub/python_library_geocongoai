@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geocongoai"
+version = "0.1.0"
+description = "Lightweight utilities for GeoCongo AI"
+authors = [ { name = "GeoCongoAI" } ]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+vision = ["qrcode[pil]","Pillow","rasterio","numpy","rembg"]
+ia = ["torch","terratorch","rasterio","numpy"]
