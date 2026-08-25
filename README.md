@@ -79,3 +79,61 @@ for item in results.results:
 ```
 
 Voir les guides détaillés dans le dossier `docs/`.
+
+---
+
+## 📦 Publication sur TestPyPI & PyPI
+
+### 1. Build & Vérification du Package
+```bash
+# Nettoyage et construction des distributions (whl et sdist)
+rm -rf dist/ build/ src/*.egg-info geocongoai.egg-info
+python -m build
+python -m twine check dist/*
+```
+
+### 2. 🧪 Publication de Test sur TestPyPI
+```bash
+python -m twine upload --repository testpypi dist/*
+```
+- **Nom d'utilisateur** : `__token__`
+- **Mot de passe** : *(votre jeton TestPyPI `pypi-...`)*
+
+Test d'installation depuis TestPyPI :
+```bash
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple geocongoai
+```
+
+### 3. 🚀 Publication Officielle sur PyPI
+```bash
+python -m twine upload dist/*
+```
+- **Nom d'utilisateur** : `__token__`
+- **Mot de passe** : *(votre jeton PyPI officiel `pypi-...`)*
+
+Installation publique directe :
+```bash
+pip install geocongoai
+```
+
+---
+
+### 💡 Option automatique (`~/.pypirc`)
+Si vous préférez enregistrer vos jetons pour ne pas les retaper à chaque release, vous pouvez créer le fichier `~/.pypirc` avec la structure suivante :
+
+```ini
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+username = __token__
+password = pypi-VOTRE_TOKEN_OFFICIEL
+
+[testpypi]
+repository = https://test.pypi.org/legacy/
+username = __token__
+password = pypi-VOTRE_TOKEN_TESTPYPI
+```
+
