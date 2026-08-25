@@ -1,9 +1,9 @@
-"""geocongoai package - v0.1.0
+"""geocongoai package - v0.1.1
 
 SDK officiel Python pour GeoCongo AI : utilitaires géospatiaux, traitements d'images,
 modèles fondations IA et accès à la base de données géoscientifique.
 """
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .client import GeoCongoClient
 from .exceptions import (
