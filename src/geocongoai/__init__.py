@@ -1,9 +1,9 @@
-"""geocongoai package - v0.1.1
+"""geocongoai package - v0.1.2
 
 SDK officiel Python pour GeoCongo AI : utilitaires géospatiaux, traitements d'images,
 modèles fondations IA et accès à la base de données géoscientifique.
 """
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from .client import GeoCongoClient
 from .exceptions import (
@@ -22,6 +22,7 @@ from .models import (
     GeologicalSearchResponse,
 )
 
+from .ia import PrithviClient, AlphaEarthClient
 from . import geoscientifique_database
 from . import vision
 from . import ia
@@ -40,6 +41,8 @@ __all__ = [
     "DocumentSearchResponse",
     "GeologicalItem",
     "GeologicalSearchResponse",
+    "PrithviClient",
+    "AlphaEarthClient",
     "geoscientifique_database",
     "vision",
     "ia",
