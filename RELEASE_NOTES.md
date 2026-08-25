@@ -3,10 +3,8 @@
 Date: 2026-08-24
 
 Résumé:
-- Première version minimale de la bibliothèque `geocongoai`.
-- Fonctions: textes utilitaires (`saluer`, `introduire`, `dire_au_revoir`), génération de QR, suppression de fond (wrapper rembg), pansharpen (Brovey), client IA `PrithviClient` (via terratorch), client `AlphaEarthClient` pour extraction GEE.
-- Tests unitaires de base et workflows CI + publication ajoutés.
-
-Actions recommandées après publication:
-- Vérifier le package sur TestPyPI avant publication finale.
-- Documenter davantage les pipelines IA et ajouter exemples de modèles et poids externes.
+- Migration vers la structure standard `src/geocongoai/` résolvant les problèmes d'importation et de packaging Python.
+- Remplacement du module `text` par le SDK officiel `geoscientifique_database` (`GeoCongoClient`), permettant d'interagir avec les Edge Functions Supabase GeoCongo AI (`/rag-agent`, `/search-documents`, `/search-geological`).
+- Ajout de la gestion typée des exceptions HTTP (ex: `InsufficientBalanceError` pour le statut 402, `InvalidParametersError` pour 400).
+- Amélioration de `gundua_engine` avec calculs d'indices spectraux (NDVI, NDWI).
+- Validation complète de la suite de tests unitaires `pytest` (100% de réussite).
