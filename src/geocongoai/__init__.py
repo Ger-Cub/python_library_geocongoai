@@ -1,9 +1,9 @@
-"""geocongoai package - v0.1.2
+"""geocongoai package - v0.2.1
 
-SDK officiel Python pour GeoCongo AI : utilitaires géospatiaux, traitements d'images,
-modèles fondations IA et accès à la base de données géoscientifique.
+SDK officiel Python pour GeoCongo AI : moteur d'analyse géospatiale et géologique,
+jeux de données 3D (DrillholeDataset), visualisations interactives et IA géospatiale.
 """
-__version__ = "0.1.2"
+__version__ = "0.2.1"
 
 from .client import GeoCongoClient
 from .exceptions import (
@@ -22,27 +22,45 @@ from .models import (
     GeologicalSearchResponse,
 )
 
+from .datasets import DrillholeDataset, SampleDataset
+from .results import GeoResult
 from .ia import PrithviClient, AlphaEarthClient
+
+from . import datasets
+from . import analysis
+from . import results
+from . import visualization
 from . import geoscientifique_database
 from . import vision
 from . import ia
 from . import gundua_engine
 
 __all__ = [
+    # Top-level client & exceptions
     "GeoCongoClient",
     "GeoCongoError",
     "APIError",
     "InvalidParametersError",
     "InsufficientBalanceError",
     "ServerError",
+    # Models
     "RagSource",
     "RagResponse",
     "DocumentItem",
     "DocumentSearchResponse",
     "GeologicalItem",
     "GeologicalSearchResponse",
+    # Modern Scientific Abstractions
+    "DrillholeDataset",
+    "SampleDataset",
+    "GeoResult",
     "PrithviClient",
     "AlphaEarthClient",
+    # Package Modules
+    "datasets",
+    "analysis",
+    "results",
+    "visualization",
     "geoscientifique_database",
     "vision",
     "ia",

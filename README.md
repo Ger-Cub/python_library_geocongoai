@@ -1,139 +1,125 @@
-# GeoCongo AI — Python SDK & Geospatial Utilities (v0.1.0)
+# GeoCongo AI — Geological, Geospatial & AI Python SDK (v0.2.0)
 
-Bibliothèque Python officielle pour **GeoCongo AI** : accès aux Edge Functions Supabase, traitements d'images satellites et modèles d'IA géospatiaux.
+> **The Python SDK for geological, geospatial and AI-powered exploration workflows.**
+
+`geocongoai` est le SDK officiel Python pour **GeoCongo AI** : moteur d'analyse géologique 3D, gestion unifiée de jeux de données, accès aux Edge Functions Supabase RAG/Géologie, traitements d'images satellites et modèles fondations IA.
+
+---
+
+## 🏛️ Les 4 Piliers de GeoCongo AI SDK
+
+```text
+                       GEOCONGO AI SDK (v0.2.0)
+                                  │
+         ┌────────────────────────┼────────────────────────┐
+         │                        │                        │
+     01 DATA                  02 ANALYSIS              03 RESULTS              04 VISUALIZATION
+         │                        │                        │                        │
+  • DrillholeDataset       • DBSCAN 3D              • GeoResult              • Plotly 3D
+  • SampleDataset          • Trajectoires 3D        • Contract JSON v1.0     • Export HTML Offline
+  • CSV / DataFrames       • Convex Hull Mesh       • GeoJSON / DataFrame    • React / Three.js
+  • PostGIS / Supabase     • Seuillage Géochimique  • Metadata & Stats       • Jupyter Notebook
+```
 
 ---
 
 ## 🚀 Modules principaux
 
-1. **`geocongoai.geoscientifique_database` (ou `GeoCongoClient`)** :
-   - Client SDK officiel pour interagir avec les Edge Functions Supabase :
-     - Agent RAG (`/rag-agent`) : synthèses et réponses documentées avec citations.
-     - Recherche Documentaire (`/search-documents`) : recherche sémantique avec filtres (domaine, catégorie, province).
-     - Recherche Géologique Multimodale (`/search-geological`) : recherche vectorielle (1536D) à travers roches, cartes, jeux de données et documents.
-2. **`geocongoai.vision`** :
-   - `generate_qr` : génération de QR codes.
-   - `remove_background` : détourage d'image via `rembg`.
-   - `pansharpen_brovey` : fusion d'images multispectrales et panchromatiques (Brovey method).
-3. **`geocongoai.ia`** :
-   - `PrithviClient` : wrapper pour les modèles d'IA géospatiaux Prithvi v2 via `terratorch`.
-   - `AlphaEarthClient` : wrapper pour l'échantillonnage de pixels via Google Earth Engine (GEE).
-4. **`geocongoai.gundua_engine`** :
-   - `analyse_deterministe` : calculs d'indices spectraux (NDVI, NDWI) et analyse par règles.
-   - `analyse_ia_fondation` & `traiter_image_satellite`.
+1. **`geocongoai.datasets` (`DrillholeDataset`, `SampleDataset`)** :
+   - Ingestion et validation unifiées de forages (collars, assays, dev) et d'échantillons de surface.
+   - Chargement transparent depuis CSV, DataFrames `pandas` ou Supabase.
+2. **`geocongoai.analysis` (`geometry3d`, `geochemistry`, `clustering`)** :
+   - Calculs trigonométriques des trajectoires 3D désaxées (`dip`, `azimuth`).
+   - Moteur de clustering spatial 3D (`DBSCAN`) et génération d'enveloppes 3D (*Convex Hulls*).
+3. **`geocongoai.results` (`GeoResult`)** :
+   - Objet universel standardisé de résultat scientifique.
+   - Exporte instantanément vers du JSON (`to_json()`), du GeoJSON (`to_geojson()`), des DataFrames (`to_dataframe()`) ou un dictionnaire Python (`to_dict()`).
+4. **`geocongoai.visualization` (`PlotlyRenderer`, `HTMLRenderer`)** :
+   - Visualisation 3D interactive dans Jupyter via `result.show_3d()`.
+   - Export HTML autonome offline avec `result.to_html("export.html")`.
+5. **`geocongoai.geoscientifique_database` (ou `GeoCongoClient`)** :
+   - Agent RAG (`ask_rag`), Recherche Documentaire (`search_documents`), Recherche Géologique Multimodale 1536D (`search_geological`).
+6. **`geocongoai.vision` & `geocongoai.ia`** :
+   - Pansharpening, détourage d'images, wrappers Prithvi v2 & Google Earth Engine.
 
 ---
 
 ## 🛠️ Installation
 
 ```bash
-# Installation de base avec le SDK Edge Functions
-python -m pip install -e .
+# Installation standard
+pip install geocongoai
 
-# Optionnel : support Vision (Pansharpening, QR, Rembg)
-python -m pip install -e .[vision]
+# Avec dépendances 3D (Plotly, Scipy, Scikit-Learn)
+pip install geocongoai[spatial3d]
 
-# Optionnel : support IA (Prithvi, PyTorch, Earth Engine)
-python -m pip install -e .[ia]
+# Avec dépendances Vision / IA complets
+pip install geocongoai[vision,ia,spatial3d]
 ```
 
 ---
 
-## 💻 Exemple d'utilisation rapide du SDK
+## 💻 Exemple 1 : Workflow d'Analyse 3D des Forages
+
+```python
+from geocongoai import DrillholeDataset
+
+# 1. Ingestion des données de forages (CSV ou DataFrames)
+dataset = DrillholeDataset.from_csv(
+    collar_path="collars.csv",
+    assay_path="assays.csv"
+)
+
+# Diagnostic exécutif du dataset
+print(dataset.info())
+
+# 2. Analyse Spatiale 3D & DBSCAN sur le Cuivre (Cu)
+result = dataset.analyze(
+    method="dbscan",
+    element="cu_pct",
+    grade_threshold=0.5,  # Teneur de coupure 0.5%
+    eps=25.0,             # Rayon 25m
+    min_samples=3
+)
+
+# 3. Visualisation 3D directe dans un Notebook Jupyter
+result.show_3d()
+
+# 4. Export HTML autonome pour consultation offline
+result.to_html("rapport_forages_3d.html")
+
+# 5. Export JSON pour FastAPI et Frontend React
+json_payload = result.to_json()
+```
+
+---
+
+## 💻 Exemple 2 : Interroger l'Agent RAG & la Base Géoscientifique
 
 ```python
 from geocongoai import GeoCongoClient
-from geocongoai.exceptions import InsufficientBalanceError
 
-# Initialisation du client avec la clé Supabase
 client = GeoCongoClient(api_key="VOTRE_SUPABASE_ANON_KEY")
 
-# 1. Poser une question à l'Agent RAG
-try:
-    response = client.ask_rag(
-        query="Quels sont les indices de cobalt dans le Lualaba ?",
-        user_id="123e4567-e89b-12d3-a456-426614174000"
-    )
-    print("Réponse :", response.answer)
-    print("Sources :", response.sources)
-except InsufficientBalanceError:
-    print("Veuillez recharger votre solde unités.")
-
-# 2. Recherche documentaire filtrée
-docs = client.search_documents(
-    query="cuivre et cobalt",
-    domain="Mines",
-    category="Thèse",
-    province="Lualaba"
+# Poser une question à l'Agent RAG
+response = client.ask_rag(
+    query="Quels sont les gisements connus de cobalt au Lualaba ?",
+    user_id="user_123"
 )
-print(f"Trouvé {docs.total_found} documents.")
-
-# 3. Rechercher des échantillons de roches ou cartes
-results = client.search_geological(
-    query="kimberlite diamant",
-    type="rocks",
-    province="Kasaï"
-)
-for item in results.results:
-    print(f"[{item.item_type}] {item.title} (Score: {item.similarity})")
+print("Réponse :", response.answer)
 ```
-
-Voir les guides détaillés dans le dossier `docs/`.
 
 ---
 
-## 📦 Publication sur TestPyPI & PyPI
+## 📦 Publication sur PyPI (Pour les mainteneurs)
 
-### 1. Build & Vérification du Package
 ```bash
-# Nettoyage et construction des distributions (whl et sdist)
-rm -rf dist/ build/ src/*.egg-info geocongoai.egg-info
+# Build
 python -m build
+
+# Verification
 python -m twine check dist/*
-```
 
-### 2. 🧪 Publication de Test sur TestPyPI
-```bash
-python -m twine upload --repository testpypi dist/*
-```
-- **Nom d'utilisateur** : `__token__`
-- **Mot de passe** : *(votre jeton TestPyPI `pypi-...`)*
-
-Test d'installation depuis TestPyPI :
-```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple geocongoai
-```
-
-### 3. 🚀 Publication Officielle sur PyPI
-```bash
+# Publication Officielle
 python -m twine upload dist/*
 ```
-- **Nom d'utilisateur** : `__token__`
-- **Mot de passe** : *(votre jeton PyPI officiel `pypi-...`)*
-
-Installation publique directe :
-```bash
-pip install geocongoai
-```
-
----
-
-### 💡 Option automatique (`~/.pypirc`)
-Si vous préférez enregistrer vos jetons pour ne pas les retaper à chaque release, vous pouvez créer le fichier `~/.pypirc` avec la structure suivante :
-
-```ini
-[distutils]
-index-servers =
-    pypi
-    testpypi
-
-[pypi]
-username = __token__
-password = pypi-VOTRE_TOKEN_OFFICIEL
-
-[testpypi]
-repository = https://test.pypi.org/legacy/
-username = __token__
-password = pypi-VOTRE_TOKEN_TESTPYPI
-```
-
