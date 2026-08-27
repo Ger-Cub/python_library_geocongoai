@@ -71,6 +71,34 @@
    > from geocongoai.ia import PrithviClient
    > features = PrithviClient().extract_deep_features("image_sentinel2.tif")
    > ```
+   >
+   > De même pour **AlphaEarth** (wrapper Google Earth Engine) :
+   >
+   > ```python
+   > # ❌ Sans wrapper : authentification GEE + configuration ImageCollection + sampling
+   > import ee
+   > credentials = ee.ServiceAccountCredentials("my-sa@project.iam.gserviceaccount.com", "key.json")
+   > ee.Initialize(credentials)
+   > collection = ee.ImageCollection("COPERNICUS/S2_SR").filterDate("2023-01-01", "2023-03-31")
+   > composite = collection.median().select(["B4", "B3", "B2", "B8"])
+   > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
+   > sampled = composite.sample(region=geometry, scale=30, numPixels=1000)
+   > result = sampled.getInfo()
+   > # ... + parsing manuel des features GEE
+   >
+   > # ✅ Avec geocongoai.ia.AlphaEarthClient
+   > from geocongoai.ia import AlphaEarthClient
+   > import ee
+   >
+   > client = AlphaEarthClient(
+   >     service_account="my-sa@project.iam.gserviceaccount.com",
+   >     credentials_json="key.json"
+   > )
+   > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
+   > result = client.extract_embeddings(geometry, start_date="2023-01-01", end_date="2023-03-31")
+   > print(result["count"], "pixels extraits —", result["bands"])
+   > # → 1000 pixels extraits — ['B4', 'B3', 'B2', 'B8']
+   > ```
 
 ---
 
