@@ -52,7 +52,25 @@
    - 5 types d'analyses : `greenfield`, `illegal_mining`, `lineaments`, `landcover`, `landslide`.
    - Utilisation directe avec un payload JSON, sans dépendances lourdes.
 7. **`geocongoai.vision` & `geocongoai.ia`** :
-   - Pansharpening, détourage d'images, wrappers Prithvi v2 & Google Earth Engine.
+   - Pansharpening, détourage d'images, **wrappers** Prithvi v2 & Google Earth Engine.
+
+   > 💡 **Qu'est-ce qu'un wrapper ?**
+   > Un *wrapper* (de l'anglais *to wrap* = envelopper) est une couche d'interface qui **cache la complexité** d'un outil externe pour exposer une API simple et adaptée au contexte géologique.
+   > Prithvi v2 (IBM/NASA) et Google Earth Engine sont des outils d'experts nécessitant des dizaines de lignes de code PyTorch ou des configurations cloud complexes.
+   > Le module `geocongoai.ia` encapsule tout cela derrière une seule ligne :
+   >
+   > ```python
+   > # ❌ Sans wrapper : ~20 lignes PyTorch/TerraTorch
+   > model = PrithviEO.from_pretrained("ibm-nasa-geospatial/Prithvi-EO-2.0-300M")
+   > tensor = preprocess_sentinel2(path, bands=[...], normalize=True)
+   > with torch.no_grad():
+   >     features = model.encoder(tensor.unsqueeze(0))
+   > # ... + gestion GPU, normalisation, post-traitement
+   >
+   > # ✅ Avec geocongoai.ia : 2 lignes pour un géologue
+   > from geocongoai.ia import PrithviClient
+   > features = PrithviClient().extract_deep_features("image_sentinel2.tif")
+   > ```
 
 ---
 
