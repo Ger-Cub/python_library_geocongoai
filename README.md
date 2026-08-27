@@ -1,4 +1,4 @@
-# GeoCongo AI — Geological, Geospatial & AI Python SDK (v0.2.0)
+# GeoCongo AI — Geological, Geospatial & AI Python SDK (v0.2.1)
 
 > **The Python SDK for geological, geospatial and AI-powered exploration workflows.**
 
@@ -9,7 +9,7 @@
 ## 🏛️ Les 4 Piliers de GeoCongo AI SDK
 
 ```text
-                       GEOCONGO AI SDK (v0.2.0)
+                       GEOCONGO AI SDK (v0.2.1)
                                   │
          ┌────────────────────────┼────────────────────────┐
          │                        │                        │
@@ -19,6 +19,14 @@
   • SampleDataset          • Trajectoires 3D        • Contract JSON v1.0     • Export HTML Offline
   • CSV / DataFrames       • Convex Hull Mesh       • GeoJSON / DataFrame    • React / Three.js
   • PostGIS / Supabase     • Seuillage Géochimique  • Metadata & Stats       • Jupyter Notebook
+
+  05 GUNDUA ENGINE (Règles)
+         │
+  • Greenfield (potentiel minier)
+  • Illegal Mining (risque)
+  • Lineaments (failles/fractures)
+  • Landcover (occupation sol)
+  • Landslide (susceptibilité)
 ```
 
 ---
@@ -39,7 +47,11 @@
    - Export HTML autonome offline avec `result.to_html("export.html")`.
 5. **`geocongoai.geoscientifique_database` (ou `GeoCongoClient`)** :
    - Agent RAG (`ask_rag`), Recherche Documentaire (`search_documents`), Recherche Géologique Multimodale 1536D (`search_geological`).
-6. **`geocongoai.vision` & `geocongoai.ia`** :
+6. **`geocongoai.gundua_engine` (`GunduaEngineClient`, `analyse_basee_sur_des_regles`)** :
+   - Moteur de découverte géospatiale par **analyse basée sur des règles** via API dédiée.
+   - 5 types d'analyses : `greenfield`, `illegal_mining`, `lineaments`, `landcover`, `landslide`.
+   - Utilisation directe avec un payload JSON, sans dépendances lourdes.
+7. **`geocongoai.vision` & `geocongoai.ia`** :
    - Pansharpening, détourage d'images, wrappers Prithvi v2 & Google Earth Engine.
 
 ---
@@ -111,7 +123,64 @@ results["NI"].show_3d()
 
 ---
 
-## 💻 Exemple 2 : Interroger l'Agent RAG & la Base Géoscientifique
+## 🌍 Exemple 2 : Analyses Basées sur des Règles — Gundua Engine
+
+> Le **Gundua Engine** est le moteur de découverte géospatiale de GeoCongo AI. Il analyse des images satellitaires (Sentinel-2, DEM) pour détecter des zones minières, cartographier l'occupation du sol ou évaluer les risques géologiques, **sans installation de dépendances lourdes**.
+
+```python
+from geocongoai.gundua_engine import GunduaEngineClient, analyse_basee_sur_des_regles
+
+# --- Option A : Client orienté-objet (recommandé) ---
+client = GunduaEngineClient()
+
+# 1. Analyse du potentiel minier (Greenfield)
+result = client.analyze(
+    "greenfield",
+    bbox=[28.5, -11.5, 28.6, -11.4],   # [min_lon, min_lat, max_lon, max_lat]
+    datetime="2023-06-01/2023-06-30"
+)
+print(result)  # {"potential": 0.78, "high_potential_area_km2": 4.2, ...}
+
+# 2. Détection de mines illicites
+result = client.analyze(
+    "illegal_mining",
+    bbox=[28.5, -11.5, 28.6, -11.4],
+    datetime="2023-06-01/2023-06-30"
+)
+print(result["risk_level"])  # "high"
+
+# 3. Extraction de linéaments (failles/fractures)
+result = client.analyze("lineaments", bbox=[28.5, -11.5, 28.6, -11.4])
+
+# 4. Classification d'occupation du sol
+result = client.analyze("landcover", bbox=[28.5, -11.5, 28.6, -11.4])
+
+# 5. Susceptibilité aux glissements de terrain
+result = client.analyze("landslide", bbox=[28.5, -11.5, 28.6, -11.4])
+```
+
+```python
+# --- Option B : Payload dict direct (style API REST) ---
+result = analyse_basee_sur_des_regles({
+    "analysis_type": "greenfield",
+    "bbox": [28.5, -11.5, 28.6, -11.4],
+    "datetime": "2023-06-01/2023-06-30"
+})
+```
+
+### 📊 Types d'analyse disponibles
+
+| Type | Source de données | Détection | Sortie principale |
+|---|---|---|---|
+| `greenfield` | Sentinel-2 | Indices minéraux pondérés | `potential` (0–1) |
+| `illegal_mining` | Sentinel-2 | Sol nu + végétation | `risk_level` + stats |
+| `lineaments` | DEM | Hillshade + bords | LineStrings + orientation |
+| `landcover` | Sentinel-2 | Seuils spectraux | 4 classes d'occupation |
+| `landslide` | DEM + S2 | Pente + humidité | `susceptibility` (high/mod/low) |
+
+---
+
+## 💻 Exemple 3 : Interroger l'Agent RAG & la Base Géoscientifique
 
 ```python
 from geocongoai import GeoCongoClient
