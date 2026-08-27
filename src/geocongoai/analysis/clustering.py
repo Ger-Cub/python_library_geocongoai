@@ -28,7 +28,8 @@ def cluster_drillholes(
 
     Args:
         dataset: Instance de DrillholeDataset.
-        element: Champ de teneur à analyser (ex: 'cu_pct').
+        element: Champ de teneur à analyser dans la table assay (ex: 'cu_pct', 'CU', 'NI', 'FE', 'S').
+                 'cu_pct' est la valeur par défaut. Aucune obligation de renommer vos colonnes d'origine.
         grade_threshold: Seuil minimal de coupure géochimique.
         eps: Rayon de recherche DBSCAN (en mètres).
         min_samples: Nombre minimum de points par cluster.

@@ -70,13 +70,13 @@ dataset = DrillholeDataset.from_csv(
     assay_path="assays.csv"
 )
 
-# Diagnostic exécutif du dataset
+# Diagnostic exécutif du dataset (détecte automatiquement tous les éléments géochimiques)
 print(dataset.info())
 
-# 2. Analyse Spatiale 3D & DBSCAN sur le Cuivre (Cu)
+# 2. Analyse Spatiale 3D & DBSCAN (ex. sur la colonne 'CU' ou 'cu_pct')
 result = dataset.analyze(
     method="dbscan",
-    element="cu_pct",
+    element="CU",         # Accepte le nom exact de la colonne (ex: 'CU', 'cu_pct', 'NI', 'FE', 'S')
     grade_threshold=0.5,  # Teneur de coupure 0.5%
     eps=25.0,             # Rayon 25m
     min_samples=3
@@ -90,6 +90,23 @@ result.to_html("rapport_forages_3d.html")
 
 # 5. Export JSON pour FastAPI et Frontend React
 json_payload = result.to_json()
+```
+
+### 🔬 Gestion Multi-Éléments (CU, NI, FE, S, Au...)
+> **Note sur le nom des colonnes** : Vous n'êtes **pas obligé de renommer vos colonnes** en `cu_pct`. Le paramètre `element="cu_pct"` est simplement une **valeur par défaut**. Vous pouvez passer directement le nom de n'importe quelle colonne numérique de la table `assay`.
+
+Exemple d'analyse dynamique sur plusieurs éléments :
+```python
+# Seuils de coupure personnalisés par élément
+seuils = {"CU": 0.5, "NI": 0.2, "FE": 10.0, "S": 1.0}
+
+results = {}
+for elem in dataset.info()["elements"]:
+    threshold = seuils.get(elem, 0.5)
+    results[elem] = dataset.analyze(method="dbscan", element=elem, grade_threshold=threshold)
+
+# Visualisation 3D du Nickel
+results["NI"].show_3d()
 ```
 
 ---

@@ -125,8 +125,9 @@ class DrillholeDataset(BaseGeologicalDataset):
             return []
         sample = self.assays[0]
         elements = []
+        reserved = {"hole_id", "bhid", "from_m", "from", "to_m", "to", "x", "y", "z", "mid_depth"}
         for k, v in sample.items():
-            if k not in ("hole_id", "from_m", "to_m", "x", "y", "z", "mid_depth") and isinstance(v, (int, float)):
+            if k.lower() not in reserved and isinstance(v, (int, float)):
                 elements.append(k)
         return elements
 
@@ -163,7 +164,17 @@ class DrillholeDataset(BaseGeologicalDataset):
         min_samples: int = 3,
         **kwargs
     ) -> Any:
-        """Lance l'analyse spatiale/géochimique 3D et retourne un objet GeoResult."""
+        """Lance l'analyse spatiale/géochimique 3D et retourne un objet GeoResult.
+
+        Args:
+            method: Méthode de clustering (par défaut 'dbscan').
+            element: Nom de la colonne de teneur dans la table assay (ex: 'cu_pct', 'CU', 'NI', 'FE', 'S').
+                     Accepte n'importe quelle colonne géochimique sans obligation de la renommer en 'cu_pct'.
+            grade_threshold: Seuil minimal de coupure géochimique (cut-off grade).
+            eps: Rayon de recherche DBSCAN (en mètres).
+            min_samples: Nombre minimum de points par cluster.
+            **kwargs: Arguments additionnels pour l'analyse.
+        """
         from ..analysis.clustering import cluster_drillholes
         return cluster_drillholes(
             dataset=self,
