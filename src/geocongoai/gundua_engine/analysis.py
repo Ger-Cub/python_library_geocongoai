@@ -2,6 +2,7 @@
 import json
 import urllib.request
 import urllib.error
+from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Union
 
 try:
@@ -25,6 +26,22 @@ from geocongoai.exceptions import (
 
 DEFAULT_GUNDUA_API_URL = "https://geocongo-solafune-greenfield-api.geocongoai.com"
 VALID_ANALYSIS_TYPES = {"greenfield", "illegal_mining", "lineaments", "landcover", "landslide"}
+DEFAULT_DATETIME_MONTHS = 3  # Fenêtre temporelle par défaut : 3 mois glissants
+
+
+def _default_datetime_range(months: int = DEFAULT_DATETIME_MONTHS) -> str:
+    """Génère une plage temporelle ISO/STAC couvrant les `months` derniers mois.
+
+    Args:
+        months: Nombre de mois à couvrir en remontant depuis aujourd'hui.
+
+    Returns:
+        Chaîne formatée "YYYY-MM-DD/YYYY-MM-DD" prête pour l'API STAC.
+    """
+    end = date.today()
+    # Approximation robuste : N mois ≈ N * 30 jours
+    start = end - timedelta(days=months * 30)
+    return f"{start.isoformat()}/{end.isoformat()}"
 
 
 class GunduaEngineClient:
@@ -61,15 +78,22 @@ class GunduaEngineClient:
         payload_or_type: Union[str, Dict[str, Any]],
         bbox: Optional[List[float]] = None,
         datetime: Optional[str] = None,
+        months: int = DEFAULT_DATETIME_MONTHS,
         **kwargs
     ) -> Dict[str, Any]:
         """Exécute une analyse basée sur des règles via l'API distante Gundua Engine.
 
+        Le paramètre `datetime` est **optionnel** : si non fourni, le SDK génère
+        automatiquement une fenêtre glissante couvrant les `months` derniers mois.
+
         Args:
-            payload_or_type: Dictionnaire complet d'analyse OU type d'analyse 
-                             (ex: 'greenfield', 'illegal_mining', 'lineaments', 'landcover', 'landslide').
-            bbox: Emprise spatiale [min_lon, min_lat, max_lon, max_lat] (ex: [28.5, -11.5, 28.6, -11.4]).
+            payload_or_type: Dictionnaire complet d'analyse OU type d'analyse
+                             ('greenfield', 'illegal_mining', 'lineaments', 'landcover', 'landslide').
+            bbox: Emprise spatiale [min_lon, min_lat, max_lon, max_lat]
+                  (ex: [28.5, -11.5, 28.6, -11.4]).
             datetime: Plage temporelle ISO/STAC (ex: "2023-06-01/2023-06-30").
+                      Si absent, généré automatiquement sur les `months` derniers mois.
+            months: Nombre de mois à couvrir si `datetime` n'est pas fourni (défaut: 3).
             **kwargs: Paramètres additionnels pour l'analyse.
 
         Returns:
@@ -89,6 +113,10 @@ class GunduaEngineClient:
             raise InvalidParametersError(
                 "L'argument principal doit être un dictionnaire d'analyse ou une chaîne représentant le type d'analyse."
             )
+
+        # Auto-génération de la plage temporelle si absente
+        if not payload.get("datetime"):
+            payload["datetime"] = _default_datetime_range(months)
 
         analysis_type = payload.get("analysis_type")
         if not analysis_type:
@@ -162,16 +190,22 @@ def analyse_basee_sur_des_regles(
     payload_or_type: Union[str, Dict[str, Any]],
     bbox: Optional[List[float]] = None,
     datetime: Optional[str] = None,
+    months: int = DEFAULT_DATETIME_MONTHS,
     api_url: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """Exécute une analyse basée sur des règles via l'API distante Gundua Engine.
 
+    Le paramètre `datetime` est **optionnel** : si non fourni, le SDK génère automatiquement
+    une fenêtre temporelle glissante couvrant les `months` derniers mois (défaut : 3 mois).
+
     Args:
-        payload_or_type: Dictionnaire d'analyse { "analysis_type": "greenfield", "bbox": [...], ... } 
+        payload_or_type: Dictionnaire d'analyse { "analysis_type": "greenfield", "bbox": [...], ... }
                          OU type d'analyse ('greenfield', 'illegal_mining', 'lineaments', 'landcover', 'landslide').
         bbox: Emprise spatiale [min_lon, min_lat, max_lon, max_lat].
-        datetime: Intervalle de temps (ex: "2023-06-01/2023-06-30").
+        datetime: Intervalle de temps ISO/STAC (ex: "2023-06-01/2023-06-30").
+                  Si absent, généré automatiquement sur les `months` derniers mois.
+        months: Nombre de mois à couvrir si `datetime` n'est pas fourni (défaut: 3).
         api_url: URL personnalisée de l'API (par défaut: https://geocongo-solafune-greenfield-api.geocongoai.com).
         **kwargs: Paramètres additionnels pour l'analyse.
 
@@ -179,7 +213,8 @@ def analyse_basee_sur_des_regles(
         Dictionnaire de résultats.
     """
     client = GunduaEngineClient(base_url=api_url or DEFAULT_GUNDUA_API_URL)
-    return client.analyze(payload_or_type, bbox=bbox, datetime=datetime, **kwargs)
+    return client.analyze(payload_or_type, bbox=bbox, datetime=datetime, months=months, **kwargs)
+
 
 
 # Alias raccourci

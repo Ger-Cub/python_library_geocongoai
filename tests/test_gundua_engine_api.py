@@ -1,5 +1,7 @@
 """Tests unitaires pour le client API Gundua Engine (analyse basée sur des règles)."""
+import re
 import pytest
+from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
 from geocongoai.gundua_engine import (
@@ -9,6 +11,7 @@ from geocongoai.gundua_engine import (
     VALID_ANALYSIS_TYPES,
     DEFAULT_GUNDUA_API_URL,
 )
+from geocongoai.gundua_engine.analysis import _default_datetime_range, DEFAULT_DATETIME_MONTHS
 from geocongoai.exceptions import InvalidParametersError, GeoCongoError, ServerError
 
 
@@ -45,6 +48,43 @@ def test_default_api_url():
 
 def test_aliases():
     assert analyse_regles is analyse_basee_sur_des_regles
+
+
+# ─── Tests auto-datetime ──────────────────────────────────────────────────────
+
+def test_default_datetime_range_format():
+    """La plage générée doit respecter le format YYYY-MM-DD/YYYY-MM-DD."""
+    dt = _default_datetime_range()
+    assert re.match(r"\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}", dt), f"Format invalide: {dt}"
+
+
+def test_default_datetime_range_covers_3_months():
+    """La plage par défaut (3 mois) doit couvrir environ 90 jours."""
+    dt = _default_datetime_range(months=3)
+    start_str, end_str = dt.split("/")
+    start = date.fromisoformat(start_str)
+    end = date.fromisoformat(end_str)
+    delta_days = (end - start).days
+    assert 85 <= delta_days <= 95, f"Durée attendue ~90 jours, obtenu: {delta_days}"
+
+
+def test_default_datetime_range_end_is_today():
+    """La date de fin doit être la date d'aujourd'hui."""
+    dt = _default_datetime_range()
+    _, end_str = dt.split("/")
+    assert end_str == date.today().isoformat()
+
+
+def test_default_datetime_range_custom_months():
+    """months=6 doit générer ~180 jours."""
+    dt = _default_datetime_range(months=6)
+    start_str, end_str = dt.split("/")
+    delta = (date.fromisoformat(end_str) - date.fromisoformat(start_str)).days
+    assert 175 <= delta <= 185
+
+
+def test_default_datetime_months_constant():
+    assert DEFAULT_DATETIME_MONTHS == 3
 
 
 # ─── Tests GunduaEngineClient ─────────────────────────────────────────────────
@@ -118,14 +158,64 @@ def test_analyze_greenfield_string_type(mock_requests):
     mock_requests.Session.return_value.post.return_value = mock_response
 
     client = GunduaEngineClient()
-    result = client.analyze("greenfield", bbox=SAMPLE_BBOX, datetime=SAMPLE_DATETIME)
+    result = client.analyze("greenfield", bbox=SAMPLE_BBOX)
 
     assert result["status"] == "completed"
-    # Vérifier que le payload envoyé contient bbox et datetime
+    # Vérifier que le payload envoyé contient bbox ET un datetime auto-généré
     sent_payload = mock_requests.Session.return_value.post.call_args[1]["json"]
     assert sent_payload["analysis_type"] == "greenfield"
     assert sent_payload["bbox"] == SAMPLE_BBOX
+    # datetime auto-généré : format YYYY-MM-DD/YYYY-MM-DD
+    assert re.match(r"\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}", sent_payload["datetime"])
+
+
+@patch("geocongoai.gundua_engine.analysis.requests")
+def test_analyze_auto_datetime_without_explicit_datetime(mock_requests):
+    """Sans fournir datetime, le SDK génère automatiquement la plage temporelle."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = GREENFIELD_RESPONSE
+    mock_requests.Session.return_value.post.return_value = mock_response
+
+    client = GunduaEngineClient()
+    # Aucun datetime passé !
+    client.analyze("greenfield", bbox=SAMPLE_BBOX)
+
+    sent_payload = mock_requests.Session.return_value.post.call_args[1]["json"]
+    assert "datetime" in sent_payload
+    assert re.match(r"\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}", sent_payload["datetime"])
+
+
+@patch("geocongoai.gundua_engine.analysis.requests")
+def test_analyze_explicit_datetime_overrides_auto(mock_requests):
+    """Un datetime fourni explicitement doit être préservé tel quel."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = GREENFIELD_RESPONSE
+    mock_requests.Session.return_value.post.return_value = mock_response
+
+    client = GunduaEngineClient()
+    client.analyze("greenfield", bbox=SAMPLE_BBOX, datetime=SAMPLE_DATETIME)
+
+    sent_payload = mock_requests.Session.return_value.post.call_args[1]["json"]
     assert sent_payload["datetime"] == SAMPLE_DATETIME
+
+
+@patch("geocongoai.gundua_engine.analysis.requests")
+def test_analyze_custom_months_window(mock_requests):
+    """Le paramètre months permet de choisir la fenêtre temporelle auto."""
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = GREENFIELD_RESPONSE
+    mock_requests.Session.return_value.post.return_value = mock_response
+
+    client = GunduaEngineClient()
+    client.analyze("greenfield", bbox=SAMPLE_BBOX, months=6)
+
+    sent_payload = mock_requests.Session.return_value.post.call_args[1]["json"]
+    start_str, end_str = sent_payload["datetime"].split("/")
+    delta = (date.fromisoformat(end_str) - date.fromisoformat(start_str)).days
+    assert 175 <= delta <= 185
 
 
 @patch("geocongoai.gundua_engine.analysis.requests")
