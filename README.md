@@ -72,32 +72,31 @@
    > features = PrithviClient().extract_deep_features("image_sentinel2.tif")
    > ```
    >
-   > De même pour **AlphaEarth** (wrapper Google Earth Engine) :
+   > De même pour **AlphaEarth** (wrapper Google Earth Engine pour le dataset officiel d'embeddings 64-D `GOOGLE/SATELLITE_EMBEDDING_V1_ANNUAL`) :
    >
    > ```python
-   > # ❌ Sans wrapper : authentification GEE + configuration ImageCollection + sampling
+   > # ❌ Sans wrapper : filtrage complexe GEE, selection des 64 bandes (A00..A63) & sampling
    > import ee
-   > credentials = ee.ServiceAccountCredentials("my-sa@project.iam.gserviceaccount.com", "key.json")
-   > ee.Initialize(credentials)
-   > collection = ee.ImageCollection("COPERNICUS/S2_SR").filterDate("2023-01-01", "2023-03-31")
-   > composite = collection.median().select(["B4", "B3", "B2", "B8"])
+   > ee.Initialize()
+   > collection = ee.ImageCollection("GOOGLE/SATELLITE_EMBEDDING_V1_ANNUAL")
+   > image = collection.filter(ee.Filter.calendarRange(2023, 2023, 'year')).first()
    > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
-   > sampled = composite.sample(region=geometry, scale=30, numPixels=1000)
-   > result = sampled.getInfo()
-   > # ... + parsing manuel des features GEE
+   > sampled = image.sample(region=geometry, scale=10, numPixels=1000)
+   > data = sampled.getInfo()
+   > embeddings = [feat["properties"] for feat in data.get("features", [])]
    >
-   > # ✅ Avec geocongoai.ia.AlphaEarthClient
+   > # ✅ Avec geocongoai.ia.AlphaEarthClient : simple et direct
    > from geocongoai.ia import AlphaEarthClient
    > import ee
-   >
+
    > client = AlphaEarthClient(
    >     service_account="my-sa@project.iam.gserviceaccount.com",
    >     credentials_json="key.json"
    > )
    > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
-   > result = client.extract_embeddings(geometry, start_date="2023-01-01", end_date="2023-03-31")
-   > print(result["count"], "pixels extraits —", result["bands"])
-   > # → 1000 pixels extraits — ['B4', 'B3', 'B2', 'B8']
+   > result = client.extract_embeddings(geometry, year=2023)
+   > print(result["count"], "embeddings 64-D extraits — bandes :", result["bands"][:5], "...")
+   > # → 1000 embeddings 64-D extraits — bandes : ['A00', 'A01', 'A02', 'A03', 'A04'] ...
    > ```
 
 ---
