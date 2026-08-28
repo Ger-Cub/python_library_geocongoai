@@ -24,7 +24,8 @@ from .models import (
 
 from .datasets import DrillholeDataset, SampleDataset
 from .results import GeoResult
-from .ia import PrithviClient, AlphaEarthClient
+from .ia import PrithviClient, AlphaEarthClient, ClayClient
+
 
 from . import datasets
 from . import analysis
@@ -56,6 +57,8 @@ __all__ = [
     "GeoResult",
     "PrithviClient",
     "AlphaEarthClient",
+    "ClayClient",
+
     # Package Modules
     "datasets",
     "analysis",

@@ -1,4 +1,4 @@
-# GeoCongo AI — Geological, Geospatial & AI Python SDK (v0.2.1)
+# GeoCongo AI — Geological, Geospatial & AI Python SDK (v0.2.4)
 
 > **The Python SDK for geological, geospatial and AI-powered exploration workflows.**
 
@@ -9,7 +9,7 @@
 ## 🏛️ Les 4 Piliers de GeoCongo AI SDK
 
 ```text
-                       GEOCONGO AI SDK (v0.2.1)
+                       GEOCONGO AI SDK (v0.2.4)
                                   │
          ┌────────────────────────┼────────────────────────┐
          │                        │                        │
@@ -20,13 +20,13 @@
   • CSV / DataFrames       • Convex Hull Mesh       • GeoJSON / DataFrame    • React / Three.js
   • PostGIS / Supabase     • Seuillage Géochimique  • Metadata & Stats       • Jupyter Notebook
 
-  05 GUNDUA ENGINE (Règles)
-         │
-  • Greenfield (potentiel minier)
-  • Illegal Mining (risque)
-  • Lineaments (failles/fractures)
-  • Landcover (occupation sol)
-  • Landslide (susceptibilité)
+  05 GUNDUA ENGINE (Règles)     06 FONDATION IA (geocongoai.ia)
+         │                               │
+  • Greenfield (potentiel)        • Clay v1.5 (TorchGeo natif + HF)
+  • Illegal Mining (risque)       • AlphaEarth / Google EE (64-D)
+  • Lineaments (failles)          • Prithvi v2 IBM/NASA (HLS)
+  • Landcover (occupation sol)    • PCA → RGB  •  KMeans  •  Cosinus
+  • Landslide (susceptibilité)    • Embeddings GeoParquet (sans GPU)
 ```
 
 ---
@@ -52,52 +52,87 @@
    - 5 types d'analyses : `greenfield`, `illegal_mining`, `lineaments`, `landcover`, `landslide`.
    - Utilisation directe avec un payload JSON, sans dépendances lourdes.
 7. **`geocongoai.vision` & `geocongoai.ia`** :
-   - Pansharpening, détourage d'images, **wrappers** Prithvi v2 & Google Earth Engine.
+   - Pansharpening, détourage d'images, **wrappers** Clay v1.5, Prithvi v2 & Google Earth Engine.
+   - Trois Geospatial Foundation Models intégrés : **Clay** (open-source, TorchGeo), **AlphaEarth** (Google EE 64-D), **Prithvi** (IBM/NASA HLS).
 
    > 💡 **Qu'est-ce qu'un wrapper ?**
-   > Un *wrapper* (de l'anglais *to wrap* = envelopper) est une couche d'interface qui **cache la complexité** d'un outil externe pour exposer une API simple et adaptée au contexte géologique.
-   > Prithvi v2 (IBM/NASA) et Google Earth Engine sont des outils d'experts nécessitant des dizaines de lignes de code PyTorch ou des configurations cloud complexes.
-   > Le module `geocongoai.ia` encapsule tout cela derrière une seule ligne :
-   >
-   > ```python
-   > # ❌ Sans wrapper : ~20 lignes PyTorch/TerraTorch
-   > model = PrithviEO.from_pretrained("ibm-nasa-geospatial/Prithvi-EO-2.0-300M")
-   > tensor = preprocess_sentinel2(path, bands=[...], normalize=True)
-   > with torch.no_grad():
-   >     features = model.encoder(tensor.unsqueeze(0))
-   > # ... + gestion GPU, normalisation, post-traitement
-   >
-   > # ✅ Avec geocongoai.ia : 2 lignes pour un géologue
-   > from geocongoai.ia import PrithviClient
-   > features = PrithviClient().extract_deep_features("image_sentinel2.tif")
-   > ```
-   >
-   > De même pour **AlphaEarth** (wrapper Google Earth Engine pour le dataset officiel d'embeddings 64-D `GOOGLE/SATELLITE_EMBEDDING_V1_ANNUAL`) :
-   >
-   > ```python
-   > # ❌ Sans wrapper : filtrage complexe GEE, selection des 64 bandes (A00..A63) & sampling
-   > import ee
-   > ee.Initialize()
-   > collection = ee.ImageCollection("GOOGLE/SATELLITE_EMBEDDING_V1_ANNUAL")
-   > image = collection.filter(ee.Filter.calendarRange(2023, 2023, 'year')).first()
-   > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
-   > sampled = image.sample(region=geometry, scale=10, numPixels=1000)
-   > data = sampled.getInfo()
-   > embeddings = [feat["properties"] for feat in data.get("features", [])]
-   >
-   > # ✅ Avec geocongoai.ia.AlphaEarthClient : simple et direct
-   > from geocongoai.ia import AlphaEarthClient
-   > import ee
+   > Un *wrapper* expose une API simple sur des outils d'experts complexes (PyTorch, Earth Engine, HuggingFace).
+   > Le module `geocongoai.ia` encapsule tout cela derrière quelques lignes adaptées au contexte géologique.
 
-   > client = AlphaEarthClient(
-   >     service_account="my-sa@project.iam.gserviceaccount.com",
-   >     credentials_json="key.json"
-   > )
-   > geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
-   > result = client.extract_embeddings(geometry, year=2023)
-   > print(result["count"], "embeddings 64-D extraits — bandes :", result["bands"][:5], "...")
-   > # → 1000 embeddings 64-D extraits — bandes : ['A00', 'A01', 'A02', 'A03', 'A04'] ...
-   > ```
+   #### 🧱 Clay Foundation Model (v1.5 — TorchGeo natif)
+
+   Clay est un modèle open-source entraîné sur des milliards de patches satellites (Sentinel-2, Landsat, drone).
+   `geocongoai.ia.ClayClient` offre **3 voies** selon vos ressources :
+
+   ```python
+   from geocongoai.ia import ClayClient
+
+   # ── Voie 1 : Embeddings précalculés (sans GPU, sans modèle) ─────────────────
+   # Télécharge directement les vecteurs publiés sur Source Cooperative
+   client = ClayClient(use_torchgeo=False)
+   ds = client.load_precomputed_embeddings(
+       "https://source.coop/clay/clay-model-v0-embeddings/kivu_2023.parquet"
+   )
+   emb = ds.embedding_matrix()          # numpy (N, 768)
+   pca = client.apply_pca(emb)          # 3 composantes RGB
+   print(pca["explained_variance_ratio"])  # [0.42, 0.18, 0.09]
+
+   # ── Voie 2 : TorchGeo natif — DOFA ViT-B/16 (768-D) ────────────────────────
+   # Poids mis en cache automatiquement via HuggingFace Hub
+   client = ClayClient(use_torchgeo=True, torchgeo_backbone="dofa")
+   client.load_model(wavelengths=[0.49, 0.56, 0.66])  # Sentinel-2 B2/B3/B4
+   result = client.extract_embeddings(patch_tensor)   # (1, 3, H, W)
+   print(result["shape"])   # (1, 768)
+
+   # ── Voie 3 : Carte spatiale RGB depuis GeoTIFF ──────────────────────────────
+   result = client.generate_spatial_pca_map(
+       "sentinel2_kivu.tif",
+       output_rgb_tif="kivu_pca_rgb.tif"
+   )
+   # Zones de même couleur = propriétés géologiques similaires
+   ```
+
+   ##### Clustering & Similarité
+   ```python
+   # Segmentation non supervisée (forêt, eau, mine, sol nu...)
+   cluster = client.cluster_embeddings(emb, n_clusters=6)
+   print(cluster["labels"])   # array([2, 0, 4, 1, ...])  — 6 classes automatiques
+
+   # Recherche des 5 patches les plus similaires à un patch requête
+   sim = client.similarity_search(query_emb, emb, top_k=5)
+   print(sim["scores"])   # [0.98, 0.97, 0.95, 0.93, 0.91]
+   ```
+
+   #### 🌍 AlphaEarth (Google Earth Engine — 64-D annuel)
+
+   ```python
+   from geocongoai.ia import AlphaEarthClient
+   import ee
+
+   client = AlphaEarthClient(
+       service_account="my-sa@project.iam.gserviceaccount.com",
+       credentials_json="key.json"
+   )
+   geometry = ee.Geometry.BBox(28.5, -11.5, 28.6, -11.4)
+   result = client.extract_embeddings(geometry, year=2023)
+   print(result["count"], "embeddings 64-D — bandes :", result["bands"][:5])
+   # → 1000 embeddings 64-D — bandes : ['A00', 'A01', 'A02', 'A03', 'A04']
+   ```
+
+   #### 🔬 Prithvi v2 (IBM/NASA — HLS 30m)
+
+   ```python
+   from geocongoai.ia import PrithviClient
+   features = PrithviClient().extract_deep_features("image_sentinel2.tif")
+   ```
+
+   ##### Comparatif des 3 modèles fondations
+
+   | Modèle | Accès | Résolution | Dim. | Cas d'usage |
+   |---|---|---|---|---|
+   | **Clay v1.5** | Open-source (HF + TorchGeo) | 0.6 m → 10 m | 768-D | Recherche locale, pipeline ML custom |
+   | **AlphaEarth** | Google Earth Engine | 10 m (annuel) | 64-D | Cartographie globale rapide |
+   | **Prithvi v2** | Open-source (IBM/NASA HF) | 30 m (HLS) | variable | Suivi agricole, climat, catastrophes |
 
 ---
 
