@@ -1,4 +1,5 @@
 """Unit tests pour le module SDK geoscientifique_database de GeoCongo AI."""
+import os
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -22,16 +23,33 @@ def test_imports_and_alias():
 
 
 def test_client_init():
-    client = GeoCongoClient(api_key="test-key-123")
-    assert client.api_key == "test-key-123"
+    client = GeoCongoClient(api_key="gcg_live_test123")
+    assert client.api_key == "gcg_live_test123"
     assert "tjpopbzjzlrrolqdismq.supabase.co" in client.base_url
 
-    with pytest.raises(ValueError):
-        GeoCongoClient(api_key="")
+    # Exception si aucune clé ni user_id
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError) as exc_info:
+            GeoCongoClient()
+        assert "Authentification requise" in str(exc_info.value)
+        assert "GEOCONGOAI_API_KEY" in str(exc_info.value)
+
+
+def test_client_init_env_var():
+    with patch.dict(os.environ, {"GEOCONGOAI_API_KEY": "gcg_live_envkey"}, clear=True):
+        client = GeoCongoClient()
+        assert client.api_key == "gcg_live_envkey"
+
+
+def test_client_init_legacy_user_id():
+    with patch.dict(os.environ, {}, clear=True):
+        client = GeoCongoClient(user_id="user-uuid-1234")
+        assert client._user_id == "user-uuid-1234"
+        assert client.api_key is None
 
 
 @patch("geocongoai.client.requests")
-def test_ask_rag_success(mock_requests):
+def test_ask_rag_success_with_api_key_without_user_id(mock_requests):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
@@ -45,12 +63,13 @@ def test_ask_rag_success(mock_requests):
             }
         ]
     }
-    mock_requests.Session.return_value.post.return_value = mock_response
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    mock_requests.Session.return_value = mock_session
 
-    client = GeoCongoClient(api_key="dummy-key")
+    client = GeoCongoClient(api_key="gcg_live_testkey")
     res = client.ask_rag(
         query="Quel est le potentiel géologique du Katanga ?",
-        user_id="123e4567-e89b-12d3-a456-426614174000",
         conversation_id="conv-1",
     )
 
@@ -58,7 +77,19 @@ def test_ask_rag_success(mock_requests):
     assert "Katanga" in res.answer
     assert len(res.sources) == 1
     assert res.sources[0].title == "Géologie du Katanga"
-    assert res.sources[0].similarity == 0.92
+
+    # Vérifier l'appel session.post et les headers inclus
+    mock_session.post.assert_called_once()
+    call_args, call_kwargs = mock_session.post.call_args
+    headers = call_kwargs.get("headers", {})
+    assert headers.get("Authorization") == "Bearer gcg_live_testkey"
+    assert headers.get("x-geocongo-api-key") == "gcg_live_testkey"
+
+    # Vérifier que userId n'est pas requis dans le payload si non transmis
+    payload = call_kwargs.get("json", {})
+    assert payload.get("query") == "Quel est le potentiel géologique du Katanga ?"
+    assert payload.get("conversationId") == "conv-1"
+    assert "userId" not in payload
 
 
 @patch("geocongoai.client.requests")
@@ -66,11 +97,13 @@ def test_ask_rag_insufficient_balance(mock_requests):
     mock_response = MagicMock()
     mock_response.status_code = 402
     mock_response.json.return_value = {"message": "Veuillez recharger votre solde unités."}
-    mock_requests.Session.return_value.post.return_value = mock_response
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    mock_requests.Session.return_value = mock_session
 
     client = GeoCongoClient(api_key="dummy-key")
     with pytest.raises(InsufficientBalanceError) as exc_info:
-        client.ask_rag(query="Test", user_id="user-1")
+        client.ask_rag(query="Test")
 
     assert "recharger votre solde" in str(exc_info.value)
     assert exc_info.value.status_code == 402
@@ -94,9 +127,11 @@ def test_search_documents(mock_requests):
             }
         ]
     }
-    mock_requests.Session.return_value.post.return_value = mock_response
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    mock_requests.Session.return_value = mock_session
 
-    client = GeoCongoClient(api_key="dummy-key")
+    client = GeoCongoClient(api_key="gcg_live_key")
     res = client.search_documents(
         query="cuivre et cobalt",
         domain="Mines",
@@ -109,6 +144,11 @@ def test_search_documents(mock_requests):
     assert len(res.results) == 1
     assert res.results[0].title == "Étude des gisements de Lualaba"
     assert res.results[0].relevant_chunks == ["Extrait relatif au cuivre..."]
+
+    # Vérifier les headers
+    call_args, call_kwargs = mock_session.post.call_args
+    headers = call_kwargs.get("headers", {})
+    assert headers.get("x-geocongo-api-key") == "gcg_live_key"
 
 
 @patch("geocongoai.client.requests")
@@ -128,9 +168,11 @@ def test_search_geological(mock_requests):
             }
         ]
     }
-    mock_requests.Session.return_value.post.return_value = mock_response
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    mock_requests.Session.return_value = mock_session
 
-    client = GeoCongoClient(api_key="dummy-key")
+    client = GeoCongoClient(api_key="gcg_live_key")
     res = client.search_geological(
         query="malachite et cuivre",
         type="rocks",
@@ -148,3 +190,4 @@ def test_search_geological_invalid_type():
     client = GeoCongoClient(api_key="dummy-key")
     with pytest.raises(InvalidParametersError):
         client.search_geological(query="test", type="invalid_type")
+

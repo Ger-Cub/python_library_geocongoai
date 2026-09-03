@@ -7,24 +7,26 @@ Ce module fournit un client Python typé permettant d'interagir directement avec
 ## 1. Initialisation
 
 ```python
+import os
 from geocongoai import GeoCongoClient
 
-client = GeoCongoClient(
-    api_key="VOTRE_SUPABASE_ANON_KEY",
-    base_url="https://tjpopbzjzlrrolqdismq.supabase.co/functions/v1" # Optionnel
-)
+# Option A : via la variable d'environnement GEOCONGOAI_API_KEY (Recommandé)
+os.environ["GEOCONGOAI_API_KEY"] = "gcg_live_votre_cle_api"
+client = GeoCongoClient()
+
+# Option B : via l'argument du constructeur
+client = GeoCongoClient(api_key="gcg_live_votre_cle_api")
 ```
 
 ---
 
 ## 2. Agent RAG (`/rag-agent`)
 
-Permet de poser des questions complexes et d'obtenir des synthèses documentées.
+Permet de poser des questions complexes et d'obtenir des synthèses documentées. L'Edge Function Supabase authentifie la requête via le header `x-geocongo-api-key`.
 
 ```python
 response = client.ask_rag(
     query="Quel est le potentiel géologique du Katanga ?",
-    user_id="123e4567-e89b-12d3-a456-426614174000",
     conversation_id="optionnel-uuid",
     voice_name="GeoCongo AI"
 )

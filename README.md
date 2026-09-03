@@ -48,12 +48,18 @@
 5. **`geocongoai.geoscientifique_database` (ou `GeoCongoClient`)** :
    - Agent RAG (`ask_rag`), Recherche Documentaire (`search_documents`), Recherche Géologique Multimodale 1536D (`search_geological`).
 6. **`geocongoai.gundua_engine` (`GunduaEngineClient`, `analyse_basee_sur_des_regles`)** :
-   - Moteur de découverte géospatiale par **analyse basée sur des règles** via API dédiée.
-   - 5 types d'analyses : `greenfield`, `illegal_mining`, `lineaments`, `landcover`, `landslide`.
-   - Utilisation directe avec un payload JSON, sans dépendances lourdes.
+   - Moteur de découverte géospatiale offrant 3 modules d'analyse : **analyses basée sur des règles, analyses ia modèles fondations et analyse des données hyperspectrales** via des API Gundua Engine.
 7. **`geocongoai.vision` & `geocongoai.ia`** :
    - Pansharpening, détourage d'images, **wrappers** Clay v1.5, Prithvi v2 & Google Earth Engine.
    - Trois Geospatial Foundation Models intégrés : **Clay** (open-source, TorchGeo), **AlphaEarth** (Google EE 64-D), **Prithvi** (IBM/NASA HLS).
+
+
+🛰️ **Qu'est-ce que le Moteur Gundua (Gundua Engine)** — Gundua Engine est le moteur de découverte de l'écosystème GeoCongo AI. Sa mission est d'analyser de données satellitaires par IA et télédétection. Grâce à ces trois modules d'analyse **analyses basée sur des règles, analyses ia modèles fondations et analyse des données hyperspectrales**, le moteur permet de traiter et d'interpréter les images satellites à différentes échelles de finesse et de complexité, au service des applications suivantes :
+
+> - Exploration minière et cartographie géologique (`greenfield`, `mining_sites_monitoring`, `structral_lineaments`, `geological_units`, `lithology`, `hydrothermal_alteration`, `mineral_detection`, `mine_reclamation`, `metal_stressed_vegetation`),
+> - Catastrophes naturelles (`lands_slides`, `flood_mapping`,`wildfire_monitoring`, `post_disaster_damage`,),
+> - Occupation des Sols, agriculture et environnement (`LULC-land_cover`, `crop_classification`, `water_bodies`)
+> - Forêts et climat (`deforestation`, `carbon_monitoring`).
 
    > 💡 **Qu'est-ce qu'un wrapper ?**
    > Un *wrapper* expose une API simple sur des outils d'experts complexes (PyTorch, Earth Engine, HuggingFace).
@@ -263,15 +269,18 @@ result = analyse_basee_sur_des_regles({
 ## 💻 Exemple 3 : Interroger l'Agent RAG & la Base Géoscientifique
 
 ```python
+import os
 from geocongoai import GeoCongoClient
 
-client = GeoCongoClient(api_key="VOTRE_SUPABASE_ANON_KEY")
+# Recommandé : via la variable d'environnement GEOCONGOAI_API_KEY
+os.environ["GEOCONGOAI_API_KEY"] = "gcg_live_votre_cle_api"
+client = GeoCongoClient()
 
-# Poser une question à l'Agent RAG
-response = client.ask_rag(
-    query="Quels sont les gisements connus de cobalt au Lualaba ?",
-    user_id="user_123"
-)
+# Ou en passant api_key au constructeur :
+# client = GeoCongoClient(api_key="gcg_live_votre_cle_api")
+
+# Poser une question à l'Agent RAG (l'identité est résolue automatiquement via la clé API)
+response = client.ask_rag("Quels sont les gisements connus de cobalt au Lualaba ?")
 print("Réponse :", response.answer)
 ```
 
