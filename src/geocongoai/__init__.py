@@ -1,9 +1,9 @@
-"""geocongoai package - v0.2.3
+"""geocongoai package - v0.2.4
 
 SDK officiel Python pour GeoCongo AI : moteur d'analyse géospatiale et géologique,
 jeux de données 3D (DrillholeDataset), visualisations interactives et IA géospatiale.
 """
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 from .client import GeoCongoClient
 from .exceptions import (
