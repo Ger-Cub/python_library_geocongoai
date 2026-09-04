@@ -1,7 +1,7 @@
-"""Tests unitaires pour le module 3D drillholes (geocongoai.gundua_engine.drillholes)."""
+"""Tests unitaires pour le module 3D drillholes (geocongoai.chimbua_engine.drillholes)."""
 import os
 import pytest
-from geocongoai.gundua_engine import (
+from geocongoai.chimbua_engine import (
     compute_drillhole_intervals,
     cluster_assay_points,
     generate_cluster_hulls,
@@ -9,6 +9,14 @@ from geocongoai.gundua_engine import (
     export_3d_visualization,
     analyse_et_visualiser_forages_3d,
 )
+from geocongoai.gundua_engine import (
+    compute_drillhole_intervals as gundua_compute_drillhole_intervals,
+)
+
+
+def test_chimbua_and_gundua_compatibility_alias():
+    assert compute_drillhole_intervals is gundua_compute_drillhole_intervals
+
 
 
 @pytest.fixture

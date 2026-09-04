@@ -1,9 +1,10 @@
-"""Unit tests pour le module SDK geoscientifique_database de GeoCongo AI."""
+"""Unit tests pour le module SDK Pekua Engine de GeoCongo AI."""
 import os
 import pytest
 from unittest.mock import MagicMock, patch
 
 from geocongoai import GeoCongoClient
+from geocongoai.pekua_engine import GeoCongoClient as PekuaClient
 from geocongoai.geoscientifique_database import GeoCongoClient as DBClient
 from geocongoai.exceptions import (
     GeoCongoError,
@@ -19,6 +20,7 @@ from geocongoai.models import (
 
 
 def test_imports_and_alias():
+    assert GeoCongoClient is PekuaClient
     assert GeoCongoClient is DBClient
 
 

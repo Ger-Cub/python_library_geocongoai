@@ -1,14 +1,14 @@
-"""Module `gundua_engine.drillholes` pour l'analyse spatiale 3D des forages géologiques.
+"""Module `chimbua_engine.drillholes` pour l'analyse spatiale 3D et gestion des forages géologiques.
 
-Conserve la compatibilité descendante 100% avec les versions précédentes en déléguant
-aux nouveaux modules `geocongoai.datasets`, `geocongoai.analysis`, `geocongoai.results` et `geocongoai.visualization`.
+Fait partie du moteur Chimbua Engine pour la gestion des sondages, le clustering 3D et la visualisation.
 """
 from typing import List, Dict, Any, Optional
-from ..datasets.drillholes import DrillholeDataset
-from ..analysis.geometry3d import compute_drillhole_trajectories as compute_drillhole_intervals, compute_convex_hulls
-from ..analysis.clustering import cluster_drillholes
-from ..visualization.plotly import PlotlyRenderer
-from ..visualization.html import HTMLRenderer
+from geocongoai.datasets.drillholes import DrillholeDataset
+from geocongoai.analysis.geometry3d import compute_drillhole_trajectories as compute_drillhole_intervals, compute_convex_hulls
+from geocongoai.analysis.clustering import cluster_drillholes
+from geocongoai.visualization.plotly import PlotlyRenderer
+from geocongoai.visualization.html import HTMLRenderer
+from geocongoai.analysis.geochemistry import filter_by_grade_threshold
 
 try:
     import plotly.graph_objects as go
@@ -26,7 +26,6 @@ def cluster_assay_points(
     """Adaptateur de rétrocompatibilité pour cluster_assay_points."""
     dummy_dataset = DrillholeDataset(collars=[], assays=[])
     # For backwards compatibility where points are pre-computed
-    from ..analysis.geochemistry import filter_by_grade_threshold
     try:
         import numpy as np
         from sklearn.cluster import DBSCAN
@@ -92,7 +91,7 @@ def create_3d_drillhole_figure(
     title: str = "3D Geological Drillhole Viewer - GeoCongo AI"
 ) -> Any:
     """Adaptateur de rétrocompatibilité pour la génération de figure Plotly."""
-    from ..results.result import GeoResult
+    from geocongoai.results import GeoResult
     geom_list = []
     if hulls:
         for cid, h in hulls.items():

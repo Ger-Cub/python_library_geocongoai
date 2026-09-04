@@ -31,10 +31,14 @@ from . import datasets
 from . import analysis
 from . import results
 from . import visualization
-from . import geoscientifique_database
 from . import vision
 from . import ia
+from . import pekua_engine
 from . import gundua_engine
+from . import chimbua_engine
+
+# Alias de rétrocompatibilité pour geoscientifique_database
+geoscientifique_database = pekua_engine
 
 __all__ = [
     # Top-level client & exceptions
@@ -59,13 +63,18 @@ __all__ = [
     "AlphaEarthClient",
     "ClayClient",
 
-    # Package Modules
+    # Core Engines
+    "pekua_engine",
+    "gundua_engine",
+    "chimbua_engine",
+
+    # Package Utility Modules
     "datasets",
     "analysis",
     "results",
     "visualization",
-    "geoscientifique_database",
     "vision",
     "ia",
-    "gundua_engine",
+    "geoscientifique_database",
 ]
+
